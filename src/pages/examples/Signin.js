@@ -1,16 +1,39 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleLeft, faEnvelope, faUnlockAlt } from "@fortawesome/free-solid-svg-icons";
 import { faFacebookF, faGithub, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { Col, Row, Form, Card, Button, FormCheck, Container, InputGroup } from '@themesberg/react-bootstrap';
 import { Link } from 'react-router-dom';
-
 import { Routes } from "../../routes";
 import BgImage from "../../assets/img/illustrations/signin.svg";
-
+import { useDispatch} from "react-redux";
+import { loginEmployee } from "../../features/employee/employeeSlice";
 
 export default () => {
+  const dispatch = useDispatch()
+  // const navigate = useHistory()
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: false,
+  });
+
+  const changeHandler = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  const formHandler = (e) => {
+    e.preventDefault();
+    dispatch(loginEmployee(formData))
+    // setTimeout(()=>{
+    //  navigate('/volt-react-dashboard')
+    // },10 0)
+  };
+
   return (
     <main>
       <section className="d-flex align-items-center my-5 mt-lg-6 mb-lg-5">
@@ -26,34 +49,52 @@ export default () => {
                 <div className="text-center text-md-center mb-4 mt-md-0">
                   <h3 className="mb-0">Sign in to our platform</h3>
                 </div>
-                <Form className="mt-4">
+                <Form className="mt-4" onSubmit={formHandler}>
                   <Form.Group id="email" className="mb-4">
                     <Form.Label>Your Email</Form.Label>
                     <InputGroup>
                       <InputGroup.Text>
                         <FontAwesomeIcon icon={faEnvelope} />
                       </InputGroup.Text>
-                      <Form.Control autoFocus required type="email" placeholder="example@company.com" />
+                      <Form.Control 
+                        name="email"
+                        value={formData.email}
+                        onChange={changeHandler}
+                        autoFocus 
+                        required 
+                        type="email" 
+                        placeholder="example@company.com" 
+                      />
                     </InputGroup>
                   </Form.Group>
-                  <Form.Group>
-                    <Form.Group id="password" className="mb-4">
-                      <Form.Label>Your Password</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>
-                          <FontAwesomeIcon icon={faUnlockAlt} />
-                        </InputGroup.Text>
-                        <Form.Control required type="password" placeholder="Password" />
-                      </InputGroup>
-                    </Form.Group>
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <Form.Check type="checkbox">
-                        <FormCheck.Input id="defaultCheck5" className="me-2" />
-                        <FormCheck.Label htmlFor="defaultCheck5" className="mb-0">Remember me</FormCheck.Label>
-                      </Form.Check>
-                      <Card.Link className="small text-end">Lost password?</Card.Link>
-                    </div>
+                  <Form.Group id="password" className="mb-4">
+                    <Form.Label>Your Password</Form.Label>
+                    <InputGroup>
+                      <InputGroup.Text>
+                        <FontAwesomeIcon icon={faUnlockAlt} />
+                      </InputGroup.Text>
+                      <Form.Control 
+                        name="password"
+                        value={formData.password}
+                        onChange={changeHandler}
+                        required 
+                        type="password" 
+                        placeholder="Password" 
+                      />
+                    </InputGroup>
                   </Form.Group>
+                  <div className="d-flex justify-content-between align-items-center mb-4">
+                    <Form.Check 
+                      type="checkbox"
+                      name="rememberMe"
+                      checked={formData.rememberMe}
+                      onChange={changeHandler}
+                    >
+                      <FormCheck.Input id="defaultCheck5" className="me-2" />
+                      <FormCheck.Label htmlFor="defaultCheck5" className="mb-0">Remember me</FormCheck.Label>
+                    </Form.Check>
+                    <Card.Link className="small text-end">Lost password?</Card.Link>
+                  </div>
                   <Button variant="primary" type="submit" className="w-100">
                     Sign in
                   </Button>
@@ -69,7 +110,7 @@ export default () => {
                   <Button variant="outline-light" className="btn-icon-only btn-pill text-twitter me-2">
                     <FontAwesomeIcon icon={faTwitter} />
                   </Button>
-                  <Button variant="outline-light" className="btn-icon-only btn-pil text-dark">
+                  <Button variant="outline-light" className="btn-icon-only btn-pill text-dark">
                     <FontAwesomeIcon icon={faGithub} />
                   </Button>
                 </div>

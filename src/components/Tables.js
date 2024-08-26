@@ -1,14 +1,19 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleDown, faAngleUp, faArrowDown, faArrowUp, faEdit, faEllipsisH, faExternalLinkAlt, faEye, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { Col, Row, Nav, Card, Image, Button, Table, Dropdown, ProgressBar, Pagination, ButtonGroup } from '@themesberg/react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Col, Row, Nav, Card, Image, Button,Form, Table, Dropdown, ProgressBar, Pagination, ButtonGroup } from '@themesberg/react-bootstrap';
+import { Link, useHistory } from 'react-router-dom';
+import {useDispatch, useSelector} from 'react-redux'
+import { applyJob, candidateList, deleteCandidate, jobsAppliedByCandidate } from '../features/candidate/candidateSlice'
 
 import { Routes } from "../routes";
 import { pageVisits, pageTraffic, pageRanking } from "../data/tables";
 import transactions from "../data/transactions";
 import commands from "../data/commands";
+import { deleteEmployee, getAllEmployees } from "../features/employee/employeeSlice";
+import { deleteCompany, getAllCompanies } from "../features/company/companySlice";
+import { deleteVacancy, editVacancy, getAllVacancies } from "../features/vacancy/vacancySlice";
 
 const ValueChange = ({ value, suffix }) => {
   const valueIcon = value < 0 ? faAngleDown : faAngleUp;
@@ -187,69 +192,425 @@ export const RankingTable = () => {
   );
 };
 
-export const TransactionsTable = () => {
-  const totalTransactions = transactions.length;
+export const CandidateTable = () => {
+  const dispatch = useDispatch();
+  const [selectedCandidates, setSelectedCandidates] = useState([]);
+  const [selectedVacancy, setSelectedVacancy] = useState('');
+  const [searchTerm, setSearchTerm] = useState(''); // State for search input
+  const [statusFilter, setStatusFilter] = useState(''); // State for status filter
 
-  const TableRow = (props) => {
-    const { invoiceNumber, subscription, price, issueDate, dueDate, status } = props;
-    const statusVariant = status === "Paid" ? "success"
-      : status === "Due" ? "warning"
-        : status === "Canceled" ? "danger" : "primary";
+  useEffect(() => {
+    dispatch(candidateList());
+  }, [dispatch]);
 
-    return (
-      <tr>
-        <td>
-          <Card.Link as={Link} to={Routes.Invoice.path} className="fw-normal">
-            {invoiceNumber}
-          </Card.Link>
-        </td>
-        <td>
-          <span className="fw-normal">
-            {subscription}
-          </span>
-        </td>
-        <td>
-          <span className="fw-normal">
-            {issueDate}
-          </span>
-        </td>
-        <td>
-          <span className="fw-normal">
-            {dueDate}
-          </span>
-        </td>
-        <td>
-          <span className="fw-normal">
-            ${parseFloat(price).toFixed(2)}
-          </span>
-        </td>
-        <td>
-          <span className={`fw-normal text-${statusVariant}`}>
-            {status}
-          </span>
-        </td>
-        <td>
-          <Dropdown as={ButtonGroup}>
-            <Dropdown.Toggle as={Button} split variant="link" className="text-dark m-0 p-0">
-              <span className="icon icon-sm">
-                <FontAwesomeIcon icon={faEllipsisH} className="icon-dark" />
-              </span>
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item>
-                <FontAwesomeIcon icon={faEye} className="me-2" /> View Details
-              </Dropdown.Item>
-              <Dropdown.Item>
-                <FontAwesomeIcon icon={faEdit} className="me-2" /> Edit
-              </Dropdown.Item>
-              <Dropdown.Item className="text-danger">
-                <FontAwesomeIcon icon={faTrashAlt} className="me-2" /> Remove
-              </Dropdown.Item>
-            </Dropdown.Menu>
-          </Dropdown>
-        </td>
-      </tr>
+  const candidateListState = useSelector(state => state?.candidate?.candidatelist);
+  const vacancyListState = useSelector(state => state?.employee?.singleEmployee?.allotedVacancies);
+  const totalCandidates = candidateListState?.length;
+
+  const deleteHandler = (id) => {
+    dispatch(deleteCandidate(id));
+  };
+
+  const handleCheckboxChange = (candidateId) => {
+    setSelectedCandidates(prevSelected => 
+      prevSelected.includes(candidateId)
+        ? prevSelected.filter(id => id !== candidateId)
+        : [...prevSelected, candidateId]
     );
+  };
+
+  const handleSelectAllChange = (e) => {
+    if (e.target.checked) {
+      setSelectedCandidates(candidateListState.map(candidate => candidate._id));
+    } else {
+      setSelectedCandidates([]);
+    }
+  };
+
+  const handleVacancyChange = (e) => {
+    setSelectedVacancy(e.target.value);
+  };
+
+  const handleApply = () => {
+    if (selectedCandidates.length > 0 && selectedVacancy) {
+      dispatch(applyJob({ selectedCandidates, selectedVacancy }));
+    }
+  };
+
+  // Filter candidates based on search input and status filter
+  const filteredCandidates = candidateListState?.filter(candidate =>
+    candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (statusFilter === '' || candidate.status === statusFilter)
+  );
+
+  return (
+    <>
+      {/* Search Input and Status Filter */}
+      <div className="mb-3 d-flex justify-content-between align-items-center">
+        <Form.Control
+          type="text"
+          placeholder="Search by candidate name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ width: '45%' }}
+        />
+        <Form.Control
+          as="select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ width: '45%' }}
+        >
+          <option value="">Filter by status</option>
+          {/* Add the possible status options based on your data */}
+          <option value="Pending">Pending</option>
+          <option value="shortlisted">ShortListed</option>
+          <option value="Selected">Selected</option>
+          <option value="Rejected">Rejected</option>
+          {/* Add more status options as needed */}
+        </Form.Control>
+      </div>
+
+      <Card border="light" className="table-wrapper table-responsive shadow-sm">
+        <Card.Body className="pt-0">
+          <Table hover className="user-table align-items-center">
+            <thead>
+              <tr>
+                <th className="border-bottom">
+                  {/* <Form.Check type="checkbox" onChange={handleSelectAllChange} /> */}
+                </th>
+                <th className="border-bottom">S.NO</th>
+                <th className="border-bottom">Candidate Name</th>
+                <th className="border-bottom">Mobile</th>
+                <th className="border-bottom">Status</th>
+                {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+                {/* <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th> */}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCandidates?.map((candidate, idx) => (
+                <tr key={candidate._id}>
+                  <td className="border-bottom">
+                    <Form.Check
+                      type="checkbox"
+                      checked={selectedCandidates.includes(candidate._id)}
+                      onChange={() => handleCheckboxChange(candidate._id)}
+                    />
+                  </td>
+                  <td className="border-bottom">{idx + 1}</td>
+                  <td className="border-bottom">
+                    <Link to={`/candidate-detail/${candidate._id}`}>{candidate.name}</Link>
+                  </td>
+                  <td className="border-bottom">{candidate.mobile}</td>
+                  <td className="border-bottom">{candidate.status}</td>
+                  <td className="border-bottom cursor-pointer" onClick={() => deleteHandler(candidate._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </td>
+                  <td className="border-bottom">
+                    <Link to={`/edit-candidate/${candidate._id}`}><FontAwesomeIcon icon={faEdit} /></Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+            <Nav>
+              <Pagination className="mb-2 mb-lg-0">
+                <Pagination.Prev>Previous</Pagination.Prev>
+                <Pagination.Item active>1</Pagination.Item>
+                <Pagination.Item>2</Pagination.Item>
+                <Pagination.Item>3</Pagination.Item>
+                <Pagination.Item>4</Pagination.Item>
+                <Pagination.Item>5</Pagination.Item>
+                <Pagination.Next>Next</Pagination.Next>
+              </Pagination>
+            </Nav>
+            <small className="fw-bold">
+              Showing <b>{filteredCandidates?.length}</b> out of <b>{totalCandidates}</b> entries
+            </small>
+          </Card.Footer>
+        </Card.Body>
+      </Card>
+
+      {/* Select Vacancy and Apply Button */}
+      <div className="mt-3">
+        <Form.Group controlId="selectVacancy">
+          <Form.Label>Select Vacancy</Form.Label>
+          <Form.Control as="select" value={selectedVacancy} onChange={handleVacancyChange}>
+            <option value="">Select a vacancy</option>
+            {vacancyListState?.filter(vacancy => vacancy.status === 'Pending').map(vacancy => (
+              <option key={vacancy._id} value={vacancy._id}>
+                {vacancy.role} - {vacancy.companyName}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+        <Button className="mt-2" onClick={handleApply} disabled={!selectedCandidates.length || !selectedVacancy}>
+          Shortlist Candidates
+        </Button>
+      </div>
+    </>
+  );
+};
+
+export const CandidateTableByJob = () => {
+    const [searchTerm, setSearchTerm] = useState(''); // State for search input
+    const [statusFilter, setStatusFilter] = useState(''); // State for status filter
+
+    const candidateListState = useSelector(state => state?.candidate?.shortListedCandidateByJob);
+    // const vacancyListState = useSelector(state => state?.employee?.singleEmployee?.allotedVacancies);
+    const totalCandidates = candidateListState?.length;
+
+  // Filter candidates based on search input and status filter
+  const filteredCandidates = candidateListState?.filter(candidate =>
+    candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (statusFilter === '' || candidate.status === statusFilter)
+  );
+
+  return (
+    <>
+      {/* Search Input and Status Filter */}
+      <div className="mb-3 d-flex justify-content-between align-items-center">
+        <Form.Control
+          type="text"
+          placeholder="Search by candidate name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ width: '45%' }}
+        />
+        <Form.Control
+          as="select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ width: '45%' }}
+        >
+          <option value="">Filter by status</option>
+          {/* Add the possible status options based on your data */}
+          <option value="Pending">Pending</option>
+          <option value="shortlisted">ShortListed</option>
+          <option value="Selected">Selected</option>
+          <option value="Rejected">Rejected</option>
+          {/* Add more status options as needed */}
+        </Form.Control>
+      </div>
+
+      <Card border="light" className="table-wrapper table-responsive shadow-sm">
+        <Card.Body className="pt-0">
+          <Table hover className="user-table align-items-center">
+            <thead>
+              <tr>
+                <th className="border-bottom">S.NO</th>
+                <th className="border-bottom">Candidate Name</th>
+                <th className="border-bottom">Mobile</th>
+                <th className="border-bottom">Status</th>
+                {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+                {/* <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th> */}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCandidates?.map((candidate, idx) => (
+                <tr key={candidate._id}>
+                  <td className="border-bottom">{idx + 1}</td>
+                  <td className="border-bottom">
+                    <Link to={`/candidate-detail/${candidate._id}`}>{candidate.name}</Link>
+                  </td>
+                  <td className="border-bottom">{candidate.mobile}</td>
+                  <td className="border-bottom">{candidate.status}</td>
+                  {/* <td className="border-bottom cursor-pointer" onClick={() => deleteHandler(candidate._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </td> */}
+                  <td className="border-bottom">
+                    <Link to={`/edit-candidate/${candidate._id}`}><FontAwesomeIcon icon={faEdit} /></Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+            <Nav>
+              <Pagination className="mb-2 mb-lg-0">
+                <Pagination.Prev>Previous</Pagination.Prev>
+                <Pagination.Item active>1</Pagination.Item>
+                <Pagination.Item>2</Pagination.Item>
+                <Pagination.Item>3</Pagination.Item>
+                <Pagination.Item>4</Pagination.Item>
+                <Pagination.Item>5</Pagination.Item>
+                <Pagination.Next>Next</Pagination.Next>
+              </Pagination>
+            </Nav>
+            <small className="fw-bold">
+              Showing <b>{filteredCandidates?.length}</b> out of <b>{totalCandidates}</b> entries
+            </small>
+          </Card.Footer>
+        </Card.Body>
+      </Card>
+
+      {/* Select Vacancy and Apply Button */}
+    </>
+  );
+};
+
+export const EmployeeTable = () => {
+  const dispatch = useDispatch()
+  const history = useHistory()
+    useEffect(()=>{
+        dispatch(getAllEmployees())
+    },[])
+    const employeeListState = useSelector(state => state?.employee?.allEmployees)
+    const totalEmployee = employeeListState?.length;
+    const deleteHandler = (id)=>{
+      dispatch(deleteEmployee(id))
+      setTimeout(()=>{
+        history.push('/employee-list')
+      },100)
+    }
+    
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+          <tr>
+                <th className="border-bottom">S.NO</th>
+                <th className="border-bottom">Employee Name</th>
+                <th className="border-bottom">Mobile</th>
+                {/* <th className="border-bottom">Status</th> */}
+                {/* <th className="border-bottom">Total</th>
+                <th className="border-bottom">Status</th>
+                <th className="border-bottom">Action</th> */}
+                {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+              </tr>
+          </thead>
+          <tbody>
+          {
+                employeeListState?.map((employee,idx)=> {
+                return employee?.role !== 'admin'? <tr>
+                <td className="border-bottom">{idx+1}</td>
+                <td className="border-bottom"><Link to={`/employee-detail/${employee._id}`}>{employee.name}</Link></td>
+                <td className="border-bottom">{employee.mobile}</td>
+                {/* <td className="border-bottom">{employee.status}</td> */}
+                <th className="border-bottom cursor-pointer" onClick={()=> deleteHandler(employee._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </th>
+                <th className="border-bottom"><Link to={`/edit-employee/${employee._id}`}><FontAwesomeIcon icon={faEdit} /></Link></th>
+                </tr> : null
+              }) 
+            } 
+          
+            
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>
+                Previous
+              </Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>
+                Next
+              </Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalEmployee}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const CompanyTable = () => {
+  const dispatch = useDispatch()
+    useEffect(()=>{
+        dispatch(getAllCompanies())
+    },[])
+    const companyListState = useSelector(state => state?.company?.allCompanies)
+    const totalCompany = companyListState?.length;
+    const deleteHandler = (id)=>{
+      dispatch(deleteCompany(id))
+    }
+    
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+          <tr>
+                <th className="border-bottom">S.NO</th>
+                <th className="border-bottom">Company Name</th>
+                <th className="border-bottom">Company Website</th>
+                <th className="border-bottom">Contact Person Name</th>
+                <th className="border-bottom">Contact Person Mobile</th>
+                <th className="border-bottom">Contact Person Email</th>
+                <th className="border-bottom">City</th>
+                {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+              </tr>
+          </thead>
+          <tbody>
+          {
+              companyListState?.map((company,idx)=> {
+                return <tr>
+                <td className="border-bottom">{idx+1}</td>
+                <td className="border-bottom"><Link to={`/company-detail/${company._id}`}>{company.companyName}</Link></td>
+                <td className="border-bottom">{company.companyWebsite}</td>
+                <td className="border-bottom">{company.contactPersonName}</td>
+                <td className="border-bottom">{company.contactPersonMobile}</td>
+                <td className="border-bottom">{company.contactPersonEmail}</td>
+                <td className="border-bottom">{company.city}</td>
+                <th className="border-bottom cursor-pointer" onClick={()=> deleteHandler(company._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </th>
+                <th className="border-bottom"><Link to={`/edit-company/${company._id}`}><FontAwesomeIcon icon={faEdit} /></Link></th>
+                </tr>
+              }) 
+            }
+          
+            
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>
+                Previous
+              </Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>
+                Next
+              </Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalCompany}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const VacancyTable = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getAllVacancies());
+    dispatch(getAllEmployees());
+  }, [dispatch]);
+
+  const vacancyListState = useSelector((state) => state?.vacancy?.allVacancies);
+  const employees = useSelector((state) => state?.employee?.allEmployees);
+  const totalVacancies = vacancyListState?.length;
+
+  const [updatedVacancy, setUpdatedVacancy] = useState({});
+
+  const handleAllotedToChange = (vacancyId, employeeId) => {
+    setUpdatedVacancy({ ...updatedVacancy, [vacancyId]: employeeId });
+    dispatch(editVacancy({ id: vacancyId, allotedTo: employeeId }));
+  };
+
+  const deleteHandler = (id) => {
+    dispatch(deleteVacancy(id));
   };
 
   return (
@@ -258,60 +619,580 @@ export const TransactionsTable = () => {
         <Table hover className="user-table align-items-center">
           <thead>
             <tr>
-              <th className="border-bottom">#</th>
-              <th className="border-bottom">Bill For</th>
-              <th className="border-bottom">Issue Date</th>
-              <th className="border-bottom">Due Date</th>
-              <th className="border-bottom">Total</th>
-              <th className="border-bottom">Status</th>
-              <th className="border-bottom">Action</th>
-              <th className="border-bottom">Delete</th>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              <th className="border-bottom">Alloted To</th>
+              <th className="border-bottom">Dead Line</th>
+              {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+              {/* <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th> */}
             </tr>
           </thead>
           <tbody>
+            {vacancyListState?.map((vacancy, idx) => (
+              <tr key={vacancy._id}>
+                <td className="border-bottom">{idx + 1}</td>
+                <td className="border-bottom"><Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link></td>
+                <td className="border-bottom">{vacancy.companyName}</td>
+                <td className="border-bottom">{vacancy.jobLocation}</td>
+                <td className="border-bottom">{vacancy.salary}</td>
+                <td className="border-bottom">
+                  <Form.Control
+                    as="select"
+                    value={updatedVacancy[vacancy._id] || vacancy.allotedTo?._id || ''}
+                    onChange={(e) => handleAllotedToChange(vacancy._id, e.target.value)}
+                  >
+                    <option value="">Select Employee</option>
+                    {employees?.map((employee) => (
+                      employee.role !== 'admin' ? (
+                        <option key={employee._id} value={employee._id}>
+                          {employee.name}
+                        </option>
+                      ) : null
+                    ))}
+                  </Form.Control>
+                </td>
+                <td className="border-bottom">{vacancy.deadline}</td>
+                <td className="border-bottom cursor-pointer" onClick={() => deleteHandler(vacancy._id)}>
+                    <FontAwesomeIcon icon={faTrashAlt} /> 
+                </td>
+                <td className="border-bottom">
+                  <Link to={`/edit-vacancy/${vacancy._id}`}><FontAwesomeIcon icon={faEdit} /></Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>Previous</Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>Next</Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const AllCompletedVacancyTable = () => {
+  const dispatch = useDispatch();
+  const formatDate = (isoString) => new Date(isoString).toLocaleString();
+
+  useEffect(() => {
+    dispatch(getAllVacancies());
+    dispatch(getAllEmployees());
+  }, [dispatch]);
+
+  const vacancyListState = useSelector((state) => state?.vacancy?.allVacancies);
+  const totalVacancies = vacancyListState?.length;
+
+  const [updatedVacancy, setUpdatedVacancy] = useState({});
+
+  // Function to handle mail status change
+  const handleMailStatusChange = (vacancyId, status) => {
+    // Update the vacancy state
+    setUpdatedVacancy({ ...updatedVacancy, [vacancyId]: status });
+    // Dispatch action to update vacancy
+    dispatch(editVacancy({ id: vacancyId, mail: status }));
+  };
+
+  const deleteHandler = (id) => {
+    dispatch(deleteVacancy(id));
+  };
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+            <tr>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              <th className="border-bottom">Alloted To</th>
+              <th className="border-bottom">Dead Line</th>
+              <th className="border-bottom">Completed At</th>
+              <th className="border-bottom">Mail Status</th>
+              {/* Uncomment these headers if needed */}
+              {/* <th className="border-bottom"><FontAwesomeIcon icon={faTrashAlt} /></th> */}
+              {/* <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th> */}
+            </tr>
+          </thead>
+          <tbody>
+            {vacancyListState?.map((vacancy, idx) =>
+              vacancy.status === 'completed' ? (
+                <tr key={vacancy._id}>
+                  <td className="border-bottom">{idx + 1}</td>
+                  <td className="border-bottom">
+                    <Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link>
+                  </td>
+                  <td className="border-bottom">{vacancy.companyName}</td>
+                  <td className="border-bottom">{vacancy.jobLocation}</td>
+                  <td className="border-bottom">{vacancy.salary}</td>
+                  <td className="border-bottom">{vacancy.allotedTo?.name}</td>
+                  <td className="border-bottom">{vacancy.deadline}</td>
+                  <td className="border-bottom">{formatDate(vacancy.updatedAt)}</td>
+                  <td className="border-bottom">
+                    <Form.Control
+                      as="select"
+                      value={updatedVacancy[vacancy._id] || vacancy.mail}
+                      onChange={(e) => handleMailStatusChange(vacancy._id, e.target.value)}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="sent">Sent</option>
+                    </Form.Control>
+                  </td>
+                  {/* Uncomment these cells if needed */}
+                  {/* <td className="border-bottom cursor-pointer" onClick={() => deleteHandler(vacancy._id)}>
+                    <FontAwesomeIcon icon={faTrashAlt} />
+                  </td>
+                  <td className="border-bottom">
+                    <Link to={`/edit-vacancy/${vacancy._id}`}><FontAwesomeIcon icon={faEdit} /></Link>
+                  </td> */}
+                </tr>
+              ) : null
+            )}
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>Previous</Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>Next</Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+
+export const VacancyTableByCompany = ({vacancyListState}) => {
+  const dispatch = useDispatch();
+
+  
+  const totalVacancies = vacancyListState?.length;
+
+  const deleteHandler = (id) => {
+    dispatch(deleteVacancy(id));
+  };
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+            <tr>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              {/* <th className="border-bottom">Job Type</th> */}
+              <th className="border-bottom">Dead Line</th>
+              {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
+              {/* <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th> */}
+            </tr>
+          </thead>
+          <tbody>
+            {
+              vacancyListState?.map((vacancy, idx) => {
+                return (
+                  <tr key={vacancy._id}>
+                    <td className="border-bottom">{idx + 1}</td>
+                    <td className="border-bottom"><Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link></td>
+                    <td className="border-bottom">{vacancy.companyName}</td>
+                    <td className="border-bottom">{vacancy.jobLocation}</td>
+                    <td className="border-bottom">{vacancy.salary}</td>
+                    <td className="border-bottom">{vacancy.deadline}</td>
+                    <td className="border-bottom cursor-pointer" onClick={() => deleteHandler(vacancy._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </td>
+                    <td className="border-bottom"><Link to={`/edit-vacancy/${vacancy._id}`}><FontAwesomeIcon icon={faEdit} /></Link></td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>
+                Previous
+              </Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>
+                Next
+              </Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const JobAppliedBy = ({id}) => {
+  const dispatch = useDispatch();
+
+  useEffect(()=>{
+    dispatch(jobsAppliedByCandidate(id))
+  },[])
+
+  const jobAppliedState = useSelector(state => state.candidate?.jobsApllied)
+  console.log(jobAppliedState)
+  
+  const totalVacancies = jobAppliedState?.length;
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+            <tr>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              {/* <th className="border-bottom">Job Type</th> */}
+              <th className="border-bottom">Dead Line</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              jobAppliedState?.map((job, idx) => {
+                return (
+                  <tr key={job._id}>
+                    <td className="border-bottom">{idx + 1}</td>
+                    <td className="border-bottom">{job?.jobId?.role}</td>
+                    <td className="border-bottom">{job?.jobId?.companyName}</td>
+                    <td className="border-bottom">{job?.jobId?.jobLocation}</td>
+                    <td className="border-bottom">{job?.jobId?.salary}</td>
+                    <td className="border-bottom">{job?.jobId?.deadline}</td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>
+                Previous
+              </Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>
+                Next
+              </Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+
+export const AllotedVacansiesByEmployee = ({ vacancyListState,pending }) => {
+  console.log(pending)
+  const dispatch = useDispatch();
+  const [vacStatus,setVacStatus] = useState("")
+
+  const totalVacancies = vacancyListState?.length;
+
+  const statusChangeHandler = (id, status) => {
+    dispatch(editVacancy({id, status})); 
+    setVacStatus(status)
+  };
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+            <tr>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              <th className="border-bottom">Dead Line</th>
+              <th className="border-bottom">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vacancyListState?.map((vacancy, idx) => (
+              !pending ? <tr key={vacancy._id}>
+              <td className="border-bottom">{idx + 1}</td>
+              <td className="border-bottom"><Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link></td>
+              <td className="border-bottom">{vacancy.companyName}</td>
+              <td className="border-bottom">{vacancy.jobLocation}</td>
+              <td className="border-bottom">{vacancy.salary}</td>
+              <td className="border-bottom">{vacancy.deadline}</td>
+              <td className="border-bottom">
+                <select
+                  value={vacStatus == "" ?vacancy.status : vacStatus}
+                  onChange={(e) => statusChangeHandler(vacancy._id, e.target.value)}
+                  className="form-select"
+                >
+                  <option value="completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </td>
+            </tr> : 
+            vacancy.status == 'Pending' ?<tr key={vacancy._id}>
+              <td className="border-bottom">{idx + 1}</td>
+              <td className="border-bottom"><Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link></td>
+              <td className="border-bottom">{vacancy.companyName}</td>
+              <td className="border-bottom">{vacancy.jobLocation}</td>
+              <td className="border-bottom">{vacancy.salary}</td>
+              <td className="border-bottom">{vacancy.deadline}</td>
+              <td className="border-bottom">
+                <select
+                  value={vacStatus == "" ?vacancy.status : vacStatus}
+                  onChange={(e) => statusChangeHandler(vacancy._id, e.target.value)}
+                  className="form-select"
+                >
+                  <option value="completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </td>
+            </tr> : null
+            ))}
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>Previous</Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>Next</Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const MailSentVacanciesByEmployee = ({ vacancyListState }) => {
+  const dispatch = useDispatch();
+  const [vacStatus,setVacStatus] = useState("")
+
+  const totalVacancies = vacancyListState?.length;
+
+  const statusChangeHandler = (id, status) => {
+    dispatch(editVacancy({id, status})); 
+    setVacStatus(status)
+  };
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
+            <tr>
+              <th className="border-bottom">S.NO</th>
+              <th className="border-bottom">Job Title</th>
+              <th className="border-bottom">Company Name</th>
+              <th className="border-bottom">Location</th>
+              <th className="border-bottom">Salary</th>
+              <th className="border-bottom">Dead Line</th>
+              <th className="border-bottom">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vacancyListState?.map((vacancy, idx) => (
+               vacancy.mail == 'sent' ?<tr key={vacancy._id}>
+              <td className="border-bottom">{idx + 1}</td>
+              <td className="border-bottom"><Link to={`/candidate-shortlisted/${vacancy._id}`}>{vacancy.role}</Link></td>
+              <td className="border-bottom">{vacancy.companyName}</td>
+              <td className="border-bottom">{vacancy.jobLocation}</td>
+              <td className="border-bottom">{vacancy.salary}</td>
+              <td className="border-bottom">{vacancy.deadline}</td>
+              <td className="border-bottom">
+                <select
+                  value={vacStatus == "" ?vacancy.status : vacStatus}
+                  onChange={(e) => statusChangeHandler(vacancy._id, e.target.value)}
+                  className="form-select"
+                >
+                  <option value="completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </td>
+            </tr>  :null
+            ))}
+          </tbody>
+        </Table>
+        <Card.Footer className="px-3 border-0 d-lg-flex align-items-center justify-content-between">
+          <Nav>
+            <Pagination className="mb-2 mb-lg-0">
+              <Pagination.Prev>Previous</Pagination.Prev>
+              <Pagination.Item active>1</Pagination.Item>
+              <Pagination.Item>2</Pagination.Item>
+              <Pagination.Item>3</Pagination.Item>
+              <Pagination.Item>4</Pagination.Item>
+              <Pagination.Item>5</Pagination.Item>
+              <Pagination.Next>Next</Pagination.Next>
+            </Pagination>
+          </Nav>
+          <small className="fw-bold">
+            Showing <b>{totalVacancies}</b> out of <b>25</b> entries
+          </small>
+        </Card.Footer>
+      </Card.Body>
+    </Card>
+  );
+};
+
+export const TransactionsTable = () => {
+  const dispatch = useDispatch()
+    useEffect(()=>{
+        dispatch(candidateList())
+    },[])
+    const candidateListState = useSelector(state => state?.candidate?.candidatelist)
+    const totalCandidates = candidateListState?.length;
+    const deleteHandler = (id)=>{
+      dispatch(deleteCandidate(id))
+    }
+
+  // const TableRow = (props) => {
+  //   const { invoiceNumber, subscription, price, issueDate, dueDate, status } = props;
+  //   const statusVariant = status === "Paid" ? "success"
+  //     : status === "Due" ? "warning"
+  //       : status === "Canceled" ? "danger" : "primary";
+
+  //   return (
+  //     <tr>
+  //       <td>
+  //         <Card.Link as={Link} to={Routes.Invoice.path} className="fw-normal">
+  //           {invoiceNumber}
+  //         </Card.Link>
+  //       </td>
+  //       <td>
+  //         <span className="fw-normal">
+  //           {subscription}
+  //         </span>
+  //       </td>
+  //       <td>
+  //         <span className="fw-normal">
+  //           {issueDate}
+  //         </span>
+  //       </td>
+  //       <td>
+  //         <span className="fw-normal">
+  //           {dueDate}
+  //         </span>
+  //       </td>
+  //       <td>
+  //         <span className="fw-normal">
+  //           ${parseFloat(price).toFixed(2)}
+  //         </span>
+  //       </td>
+  //       <td>
+  //         <span className={`fw-normal text-${statusVariant}`}>
+  //           {status}
+  //         </span>
+  //       </td>
+  //       <td>
+  //         <Dropdown as={ButtonGroup}>
+  //           <Dropdown.Toggle as={Button} split variant="link" className="text-dark m-0 p-0">
+  //             <span className="icon icon-sm">
+  //               <FontAwesomeIcon icon={faEllipsisH} className="icon-dark" />
+  //             </span>
+  //           </Dropdown.Toggle>
+  //           <Dropdown.Menu>
+  //             <Dropdown.Item>
+  //               <FontAwesomeIcon icon={faEye} className="me-2" /> View Details
+  //             </Dropdown.Item>
+  //             <Dropdown.Item>
+  //               <FontAwesomeIcon icon={faEdit} className="me-2" /> <FontAwesomeIcon icon={faEdit} />
+  //             </Dropdown.Item>
+  //             <Dropdown.Item className="text-danger">
+  //               <FontAwesomeIcon icon={faTrashAlt} className="me-2" /> Remove
+  //             </Dropdown.Item>
+  //           </Dropdown.Menu>
+  //         </Dropdown>
+  //       </td>
+  //     </tr>
+  //   );
+  // };
+
+  return (
+    <Card border="light" className="table-wrapper table-responsive shadow-sm">
+      <Card.Body className="pt-0">
+        <Table hover className="user-table align-items-center">
+          <thead>
           <tr>
-              <td className="border-bottom">#</td>
-              <td className="border-bottom">Bill For</td>
-              <td className="border-bottom">Issue Date</td>
-              <td className="border-bottom">Due Date</td>
-              <td className="border-bottom">Total</td>
-              <td className="border-bottom">Status</td>
-              <td className="border-bottom">Action</td>
-              <th className="border-bottom">Delete</th>
+                <th className="border-bottom">S.NO</th>
+                <th className="border-bottom">Candidate Name</th>
+                <th className="border-bottom">Mobile</th>
+                <th className="border-bottom">Status</th>
+                {/* <th className="border-bottom">Total</th>
+                <th className="border-bottom">Status</th>
+                <th className="border-bottom">Action</th> */}
+                {/* <th className="border-bottom">  <FontAwesomeIcon icon={faTrashAlt} /> </th> */}
               </tr>
-
-              <tr>
-              <td className="border-bottom">#</td>
-              <td className="border-bottom">Bill For</td>
-              <td className="border-bottom">Issue Date</td>
-              <td className="border-bottom">Due Date</td>
-              <td className="border-bottom">Total</td>
-              <td className="border-bottom">Status</td>
-              <td className="border-bottom">Action</td>
-              <th className="border-bottom">Delete</th>
-              </tr>
-
-              <tr>
-              <td className="border-bottom">#</td>
-              <td className="border-bottom">Bill For</td>
-              <td className="border-bottom">Issue Date</td>
-              <td className="border-bottom">Due Date</td>
-              <td className="border-bottom">Total</td>
-              <td className="border-bottom">Status</td>
-              <td className="border-bottom">Action</td>
-              <th className="border-bottom">Delete</th>
-              </tr>
-
-              <tr>
-              <td className="border-bottom">#</td>
-              <td className="border-bottom">new For</td>
-              <td className="border-bottom">wefs</td>
-              <td className="border-bottom">Deddsffsdsd</td>
-              <td className="border-bottom">fsfsf</td>
-              <td className="border-bottom">fsfcfs</td>
-              <td className="border-bottom">fdsfs</td>
-              <td className="border-bottom">Delete</td>
-              </tr>
+          </thead>
+          <tbody>
+          {
+              candidateListState?.map((candidate,idx)=> {
+                return <tr>
+                <td className="border-bottom">{idx+1}</td>
+                <td className="border-bottom">{candidate.name}</td>
+                <td className="border-bottom">{candidate.mobile}</td>
+                <td className="border-bottom">{candidate.status}</td>
+                <th className="border-bottom cursor-pointer" onClick={()=> deleteHandler(candidate._id)}>  <FontAwesomeIcon icon={faTrashAlt} /> </th>
+                <th className="border-bottom"><FontAwesomeIcon icon={faEdit} /></th>
+                </tr>
+              })
+            }
+          
             {/* {transactions.map(t => <TableRow key={`transaction-${t.invoiceNumber}`} {...t} />)} */}
           </tbody>
         </Table>
@@ -332,13 +1213,14 @@ export const TransactionsTable = () => {
             </Pagination>
           </Nav>
           <small className="fw-bold">
-            Showing <b>{totalTransactions}</b> out of <b>25</b> entries
+            Showing <b>{totalCandidates}</b> out of <b>25</b> entries
           </small>
         </Card.Footer>
       </Card.Body>
     </Card>
   );
 };
+
 
 export const CommandsTable = () => {
   const TableRow = (props) => {

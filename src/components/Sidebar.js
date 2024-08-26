@@ -12,6 +12,7 @@ import { Routes } from "../routes";
 import ThemesbergLogo from "../assets/img/themesberg.svg";
 import ReactHero from "../assets/img/technologies/react-hero-logo.svg";
 import ProfilePicture from "../assets/img/team/profile-picture-3.jpg";
+import { isEmployee, isLoggedIn } from "../utils/config";
 
 export default (props = {}) => {
   const location = useLocation();
@@ -70,9 +71,9 @@ export default (props = {}) => {
   return (
     <>
       <Navbar expand={false} collapseOnSelect variant="dark" className="navbar-theme-primary px-4 d-md-none">
-        <Navbar.Brand className="me-lg-5" as={Link} to={Routes.DashboardOverview.path}>
+       <Navbar.Brand className="me-lg-5" as={Link} to={Routes.DashboardOverview.path}>
           <Image src={ReactHero} className="navbar-brand-light" />
-        </Navbar.Brand>
+        </Navbar.Brand> 
         <Navbar.Toggle as={Button} aria-controls="main-navbar" onClick={onCollapse}>
           <span className="navbar-toggler-icon" />
         </Navbar.Toggle>
@@ -99,25 +100,30 @@ export default (props = {}) => {
             <Nav className="flex-column pt-3 pt-md-0">
               {/* <NavItem title="Volt React" link={Routes.Presentation.path} image={ReactHero} /> */}
            <h3>Dahboard</h3>
-              <NavItem title="Overview" link={Routes.DashboardOverview.path} icon={faChartPie} />
+              { isEmployee() ? <NavItem title="DashBoard" link={Routes.DashboardOverview.path} icon={faChartPie} /> : null }
               {/* <NavItem external title="Messages" link="/#/messages" target="_blank" badgeText="Pro" icon={faInbox} /> */}
               {/* <NavItem title="Transactions" icon={faHandHoldingUsd} link={Routes.Transactions.path} /> */}
               <CollapsableNavItem eventKey="tables/" title="Candidate" icon={faTable}>
-                <NavItem title="Candidate List" link={Routes.Candidate.path} />
+                <NavItem title="Candidate List" link={Routes.CandidateList.path} />
                 <NavItem title="Add Candidate" link={Routes.Candidate.path} />
               </CollapsableNavItem>
               <CollapsableNavItem eventKey="tables/" title="Employee" icon={faTable}>
-                <NavItem title="Employee List" link={Routes.BootstrapTables.path} />
-                <NavItem title="Add Employee" link={Routes.BootstrapTables.path} />
+                <NavItem title="Employee List" link={Routes.EmployeeList.path} />
+                <NavItem title="Add Employee" link={Routes.AddEmployee.path} />
               </CollapsableNavItem>
               <CollapsableNavItem eventKey="tables/" title="Company" icon={faTable}>
-                <NavItem title="Company List" link={Routes.BootstrapTables.path} />
+                <NavItem title="Company List" link={Routes.CompanyList.path} />
                 <NavItem title="Add Company" link={Routes.Employer.path} />
               </CollapsableNavItem>
               <CollapsableNavItem eventKey="tables/" title="Vacancy" icon={faTable}>
-                <NavItem title="Vacancy List" link={Routes.BootstrapTables.path} />
+                <NavItem title="Vacancy List" link={Routes.VacancyList.path} />
                 <NavItem title="Add Vacancy" link={Routes.Vacancy.path} />
               </CollapsableNavItem>
+              {
+                isLoggedIn() ?  <NavItem title="Completed Vacancies" link={Routes.AllCompletedVacancies.path} /> : null
+              }
+               
+              
               {/* <NavItem title="Settings" icon={faCog} link={Routes.Settings.path} /> */}
               {/* <NavItem external title="Calendar" link="https://demo.themesberg.com/volt-pro-react/#/calendar" target="_blank" badgeText="Pro" icon={faCalendarAlt} />
               <NavItem external title="Map" link="https://demo.themesberg.com/volt-pro-react/#/map" target="_blank" badgeText="Pro" icon={faMapPin} /> */}

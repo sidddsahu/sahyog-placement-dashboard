@@ -1,3 +1,5 @@
+import MailSentVacanciesByEmployee from "./components/MailSentVacanciesByEmployee";
+import AllCompletedVacancies from "./pages/AllCompletedVacancies";
 
 export const Routes = {
     // pages
@@ -6,8 +8,24 @@ export const Routes = {
     Transactions: { path: "/transactions" },
     Settings: { path: "/settings" },
     Vacancy: { path: "/add-vacancy" },
+    TotalAllotedVacancies:{path:'/alloted-vacancies'},
+    TotalPendingVacancies:{path:'/pending-vacancies'},
+    MailSentVacanciesByEmployee:{path:'/mail-sent'},
     Employer: { path: "/add-company" },
     Candidate: { path: "/add-candidate" },
+    CandidateList: { path: "/candidate-list" },
+    EditCandidate: { path: "/edit-candidate/:id" },
+    CandidateDetail: { path: "/candidate-detail/:id" },
+    CandidateShortListedByJob:{path:"/candidate-shortlisted/:id"},
+    AllCompletedVacancies:{path:"/allCompletedVacancies"},
+    EmployeeList: { path: "/employee-list" },
+    EditEmployee: { path: "/edit-employee/:id" },
+    EmployeeDetail: { path: "/employee-detail/:id" },
+    CompanyList: { path: "/company-list" },
+    CompanyDetail: { path: "/company-detail/:id" },
+    EditCompany: { path: "/edit-company/:id" },
+    VacancyList: { path: "/vacancy-list" },
+    EditVacancy: { path: "/edit-vacancy/:id" },
     Upgrade: { path: "/upgrade" },
     BootstrapTables: { path: "/tables/bootstrap-tables" },
     Billing: { path: "/examples/billing" },
@@ -19,6 +37,7 @@ export const Routes = {
     Lock: { path: "/examples/lock" },
     NotFound: { path: "/examples/404" },
     ServerError: { path: "/examples/500" },
+    AddEmployee:{path:'/add-employee'},
 
     // docs
     DocsOverview: { path: "/documentation/overview" },

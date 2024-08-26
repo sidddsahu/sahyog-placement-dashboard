@@ -21,6 +21,23 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Preloader from "../components/Preloader";
+import CandidateList from './CandidateList';
+import AddEmployee from './AddEmployee';
+import EmployeeList from './EmployeeList';
+import CompanyList from './CompanyList';
+import VacancyList from './VacancyList';
+import EditCandidate from './EditCandidate';
+import EditEmployee from './EditEmployee';
+import EditCompany from './EditCompany';
+import EditVacancy from './EditVacancy';
+import CompanyDetail from './CompanyDetail';
+import CandidateDetail from './CandidateDetail';
+import EmployeeDetail from './EmployeeDetail';
+import TotalAllotedVacancies from '../components/TotalAllotedVacancies';
+import TotalPendingVacancies from '../components/TotalPendingVacancies';
+import CandidatesShortListedByJob from './CandidatesShortListedByJob'
+import AllCompletedVacancies from './AllCompletedVacancies';
+import MailSentVacanciesByEmployee from '../components/MailSentVacanciesByEmployee';
 // import Forms from "./components/Forms";
 const RouteWithLoader = ({ component: Component, ...rest }) => {
   const [loaded, setLoaded] = useState(false);
@@ -63,7 +80,7 @@ const RouteWithSidebar = ({ component: Component, ...rest }) => {
         <main className="content">
           <Navbar />
           <Component {...props} />
-          <Footer toggleSettings={toggleSettings} showSettings={showSettings} />
+          {/* <Footer toggleSettings={toggleSettings} showSettings={showSettings} /> */}
         </main>
       </>
     )}
@@ -87,8 +104,25 @@ export default () => (
     <RouteWithSidebar exact path={Routes.Transactions.path} component={Transactions} />
     <RouteWithSidebar exact path={Routes.Settings.path} component={Settings} />
     <RouteWithSidebar exact path={Routes.Vacancy.path} component={Vacancy} />
+    <RouteWithSidebar exact path={Routes.TotalAllotedVacancies.path} component={TotalAllotedVacancies} />
+    <RouteWithSidebar exact path={Routes.TotalPendingVacancies.path} component={TotalPendingVacancies} />
+    <RouteWithSidebar exact path={Routes.AllCompletedVacancies.path} component={AllCompletedVacancies} />
+    <RouteWithSidebar exact path={Routes.MailSentVacanciesByEmployee.path} component={MailSentVacanciesByEmployee} />
     <RouteWithSidebar exact path={Routes.Employer.path} component={Employer} />
     <RouteWithSidebar exact path={Routes.Candidate.path} component={Candidate} />
+    <RouteWithSidebar exact path={Routes.CandidateList.path} component={CandidateList} />
+    <RouteWithSidebar exact path={Routes.EditCandidate.path} component={EditCandidate} />
+    <RouteWithSidebar exact path={Routes.CandidateDetail.path} component={CandidateDetail} />
+    <RouteWithSidebar exact path={Routes.CandidateShortListedByJob.path} component={CandidatesShortListedByJob} />
+    <RouteWithSidebar exact path={Routes.EmployeeList.path} component={EmployeeList} />
+    <RouteWithSidebar exact path={Routes.EditEmployee.path} component={EditEmployee} />
+    <RouteWithSidebar exact path={Routes.EmployeeDetail.path} component={EmployeeDetail} />
+    <RouteWithSidebar exact path={Routes.VacancyList.path} component={VacancyList} />
+    <RouteWithSidebar exact path={Routes.EditVacancy.path} component={EditVacancy} />
+    <RouteWithSidebar exact path={Routes.CompanyList.path} component={CompanyList} />
+    <RouteWithSidebar exact path={Routes.EditCompany.path} component={EditCompany} />
+    <RouteWithSidebar exact path={Routes.CompanyDetail.path} component={CompanyDetail} />
+    <RouteWithSidebar exact path={Routes.AddEmployee.path} component={AddEmployee} />
     <RouteWithSidebar exact path={Routes.BootstrapTables.path} component={BootstrapTables} />
     {/* <RouteWithSidebar exact path={Routes.Forms.path} component={Forms} /> */}
 
